@@ -2905,12 +2905,25 @@
         mode = 'live';
         setStatus(false, 'Connecting to live results…');
         try {
-          var auth = await supabase.auth.getSession();
-          if (!auth.data.session) {
-            var signed = await supabase.auth.signInAnonymously();
-            if (signed.error) throw signed.error;
+          var session = null, lastErr = null;
+          for (var attempt = 1; attempt <= 4 && !session; attempt++) {
+            try {
+              var auth = await supabase.auth.getSession();
+              if (!auth.data.session) {
+                var signed = await supabase.auth.signInAnonymously();
+                if (signed.error) throw signed.error;
+              }
+              var got = await supabase.auth.getSession();
+              if (!got.data.session) throw new Error('No session after sign-in');
+              session = got;
+            } catch (err) {
+              lastErr = err;
+              console.warn('PollBox sign-in attempt ' + attempt + ' failed:', err);
+              setStatus(false, 'Connecting to live results… (retry ' + attempt + ')');
+              await new Promise(function (r) { setTimeout(r, 1500 * attempt); });
+            }
           }
-          var session = await supabase.auth.getSession();
+          if (!session) throw lastErr || new Error('Sign-in failed');
           myId = session.data.session.user.id;
           await refreshVotes();
           voteChannel = supabase.channel('pollbox-votes-live')
