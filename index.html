@@ -2938,7 +2938,8 @@
           mode = 'offline'; canWrite = false;
           setStatus(false, 'Live voting setup is incomplete');
           $('#modeNote').textContent = 'Live voting is not configured yet. Please try again later.';
-          $('#formErr').textContent = 'Could not connect to the voting database. Please refresh or contact the poll administrator.';
+          var why = (e && (e.message || e.code || e.status)) ? ' [' + (e.code || '') + ' ' + (e.status || '') + ' ' + (e.message || '') + ']' : '';
+          $('#formErr').textContent = 'Could not connect to the voting database. Please refresh or contact the poll administrator.' + why;
           $('#formErr').hidden = false;
           validate();
         }
